@@ -1,0 +1,489 @@
+CREATE TABLE BOOKS (
+    ISBN10 VARCHAR2(256 BYTE) NOT NULL UNIQUE, 
+	ISBN13 NUMBER(15,0) NOT NULL , 
+	TITLE VARCHAR2(256 BYTE),
+	COVER VARCHAR2(256),
+    PUBLISHER VARCHAR2(256),
+    PAGES VARCHAR2(256),
+    CONSTRAINT ISBN13_pk PRIMARY KEY (ISBN13)
+
+);
+
+create sequence seq
+start with 000001
+increment by 1
+maxvalue 99999
+
+----------------------------------------------------------------------
+
+CREATE TABLE AUTHORS (
+    AUTHOR_ID  NUMBER (6,0),
+    AUTHOR_NAME VARCHAR2 (50 CHAR) NOT NULL,
+    CONSTRAINT AUTHORS_pk PRIMARY KEY (AUTHOR_ID) 
+
+create table test (
+author varchar2(100 BYTE) not null);
+
+create table test_author (
+Author VARCHAR2 (200 BYTE));
+
+create table author_test (
+Author VARCHAR2 (200 BYTE));
+
+	
+insert into author_test (
+select part_1 from (
+SELECT b.*
+,REGEXP_SUBSTR (author, '[^,]+', 1, 1) AS part_1
+, REGEXP_SUBSTR (author, '[^,]+', 1, 2) AS part_2
+, REGEXP_SUBSTR (author, '[^,]+', 1, 3) AS part_3
+, REGEXP_SUBSTR (author, '[^,]+', 1, 4) AS part_4
+, REGEXP_SUBSTR (author, '[^,]+', 1, 5) AS part_5
+FROM test_author b) 
+union
+select part_2 from (
+SELECT b.*
+,REGEXP_SUBSTR (author, '[^,]+', 1, 1) AS part_1
+, REGEXP_SUBSTR (author, '[^,]+', 1, 2) AS part_2
+, REGEXP_SUBSTR (author, '[^,]+', 1, 3) AS part_3
+, REGEXP_SUBSTR (author, '[^,]+', 1, 4) AS part_4
+, REGEXP_SUBSTR (author, '[^,]+', 1, 5) AS part_5
+FROM test_author b) where part_2 is not null
+union
+select part_3 from (
+SELECT b.*
+,REGEXP_SUBSTR (author, '[^,]+', 1, 1) AS part_1
+, REGEXP_SUBSTR (author, '[^,]+', 1, 2) AS part_2
+, REGEXP_SUBSTR (author, '[^,]+', 1, 3) AS part_3
+, REGEXP_SUBSTR (author, '[^,]+', 1, 4) AS part_4
+, REGEXP_SUBSTR (author, '[^,]+', 1, 5) AS part_5
+FROM test_author b) where part_3 is not null
+union
+select part_4 from (
+SELECT b.*
+,REGEXP_SUBSTR (author, '[^,]+', 1, 1) AS part_1
+, REGEXP_SUBSTR (author, '[^,]+', 1, 2) AS part_2
+, REGEXP_SUBSTR (author, '[^,]+', 1, 3) AS part_3
+, REGEXP_SUBSTR (author, '[^,]+', 1, 4) AS part_4
+, REGEXP_SUBSTR (author, '[^,]+', 1, 5) AS part_5
+FROM test_author b) where part_4 is not null
+union
+select part_5 from (
+SELECT b.*
+,REGEXP_SUBSTR (author, '[^,]+', 1, 1) AS part_1
+, REGEXP_SUBSTR (author, '[^,]+', 1, 2) AS part_2
+, REGEXP_SUBSTR (author, '[^,]+', 1, 3) AS part_3
+, REGEXP_SUBSTR (author, '[^,]+', 1, 4) AS part_4
+, REGEXP_SUBSTR (author, '[^,]+', 1, 5) AS part_5
+FROM test_author b) where part_5 is not null
+);
+
+--delete irrelevant data and nulls - Data cleaning
+delete from author_test where length(author_name)<3 and  length(author_name) is null;
+delete from author_test where author like '%None%' or author like '%none%'
+
+--create sequence number for author_id
+create sequence author_id_seq 
+START with 1
+INCREMENT BY 1;
+
+--insert data to AUTHORS table using seq created and distinct authors name
+insert into authors (author_id,author_name)  
+select author_id_seq.nextval,author from (select distinct author from author_test)
+
+insert into authors (author_id,author_name)  
+select seq.nextval,author from (select distinct trim(author) as author from author_test)
+	
+create sequence seq1 
+START with 1
+INCREMENT BY 1;
+
+----------------------------------------------------------------------------------------
+CREATE TABLE BOOKS_AUTHORS (
+    AUTHOR_ID NUMBER (6,0) NOT NULL , 
+    ISBN13 NUMBER(15,0) NOT NULL ,
+    CONSTRAINT Authors_bk_auth_pk PRIMARY KEY (AUTHOR_ID,ISBN13),
+    CONSTRAINT Authors_bk_auth_fk FOREIGN KEY (AUTHOR_ID) REFERENCES AUTHORS(AUTHOR_ID),
+    CONSTRAINT ISBN_bk_auth_fk FOREIGN KEY (ISBN13) REFERENCES BOOKS(ISBN13)
+);
+
+create table books_authors_tmp (isbn13 number(15),author_name varchar2(100 BYTE));
+
+create table books_authors_tmp2 (isbn13 number(15),author_name varchar2(100 BYTE),part_1 varchar2(100 BYTE),
+part_2 varchar2(100 BYTE),part_3 varchar2(100 BYTE),part_4 varchar2(100 BYTE),part_5 varchar2(100 BYTE));
+
+create table books_authors_tmp3 (isbn13 number(15),author_name varchar2(100 BYTE))
+
+insert into books_authors_tmp2 (isbn13,author_name,part_1,part_2,part_3,part_4,part_5)
+select isbn13,author_name,REGEXP_SUBSTR (author_name, '[^,]+', 1, 1) AS part_1, REGEXP_SUBSTR (author_name, '[^,]+', 1, 2) AS part_2,
+REGEXP_SUBSTR (author_name, '[^,]+', 1, 3) AS part_3,REGEXP_SUBSTR (author_name, '[^,]+', 1, 4) AS part_4,
+REGEXP_SUBSTR (author_name, '[^,]+', 1, 5) AS part_5 from books_authors_tmp
+
+select * from(
+select isbn13,part_1 from books_authors_tmp2
+union
+select isbn13,part_2 from books_authors_tmp2 where part_2 is not null
+union 
+select isbn13,part_3 from books_authors_tmp2 where part_3 is not null
+union
+select isbn13,part_4 from books_authors_tmp2 where part_4 is not null
+union
+select isbn13,part_5 from books_authors_tmp2 where part_5 is not null) order by isbn13
+
+insert into books_authors_tmp3 (isbn13,author_name)
+(select isbn13,part_1 from books_authors_tmp2
+union
+select isbn13,part_2 from books_authors_tmp2 where part_2 is not null
+union 
+select isbn13,part_3 from books_authors_tmp2 where part_3 is not null
+union
+select isbn13,part_4 from books_authors_tmp2 where part_4 is not null
+union
+select isbn13,part_5 from books_authors_tmp2 where part_5 is not null)
+
+delete from books_authors_tmp3 where length(author_name)<3
+
+insert into books_authors (author_id,isbn13)
+select author_id,b.isbn13 from books_authors_tmp3 b,authors a
+where b.author_name=a.author_name
+
+------------------------------------------------------------------------------------------
+
+CREATE TABLE LIBRARY_BRANCH (
+    BRANCH_ID NUMBER (6,0) NOT NULL,
+    BRANCH_NAME VARCHAR2 (50 CHAR) NOT NULL,
+    BRANCH_ADDRESS VARCHAR2 (50 CHAR) NOT NULL ,
+    CONSTRAINT branch_id_pk PRIMARY KEY (BRANCH_ID)
+);
+-------------------------------------------------------------------------------------------
+CREATE TABLE BOOK_COPIES (
+    BOOK_ID NUMBER (15,0) NOT NULL,
+    ISBN13 NUMBER(15,0) NOT NULL,
+    BRANCH_ID NUMBER (6,0) NOT NULL ,    
+    NO_OF_COPIES NUMBER(2,0),
+    CONSTRAINT bk_copies_pk PRIMARY KEY (BOOK_ID),
+	CONSTRAINT ISBN_bk_cps_fk FOREIGN KEY (ISBN13) REFERENCES BOOKS (ISBN13),
+	CONSTRAINT branch_bk_cps_fk FOREIGN KEY (BRANCH_ID) REFERENCES LIBRARY_BRANCH (BRANCH_ID)
+);
+
+create sequence seq2
+START with 1
+INCREMENT BY 1
+
+create table book_copies_tmp (isbn10 varchar2(256 BYTE),branch_id number(6),no_of_copies number(2))
+
+insert into book_copies(book_id,isbn10,branch_id,no_of_copies)
+select seq2.nextval,a.isbn10,a.branch_id,no_of_copies from book_copies_tmp a,books b,library_branch l
+where a.isbn10=b.isbn10 and a.branch_id=l.branch_id
+
+ALTER TABLE BOOK_COPIES 
+ADD CONSTRAINT BK_COPIES_PK PRIMARY KEY (BOOK_ID,BRANCH_ID)
+
+---------------------------------------------------------------------------------------------------------
+
+CREATE TABLE BORROWER (
+    CARD_NO NUMBER (10,0) NOT NULL,
+    SSN NUMBER (9,0) NOT NULL,
+    FNAME VARCHAR2 (256 BYTE) NOT NULL, 
+    LNAME VARCHAR2 (256 BYTE) NOT NULL,
+    BORR_ADDRESS VARCHAR2 (256 BYTE) NOT NULL,
+    PHONE NUMBER (10,0) NOT NULL,
+    EMAIL VARCHAR2 (256 BYTE),
+    CITY VARCHAR2 (256 BYTE),
+    STATE VARCHAR2 (256 BYTE),
+    CONSTRAINT borr_pk PRIMARY KEY (CARD_NO) 
+);
+
+ALTER TABLE BORROWER
+DROP CONSTRAINT BK_LOAN_CDNO_FK ;
+
+ALTER TABLE BORROWER 
+MODIFY(CARD_NO VARCHAR2(20)); 
+-----------------------------------------------------------------------------------------------------------
+CREATE TABLE BOOK_LOANS (
+    LOAN_ID NUMBER (5,0) NOT NULL,
+    BOOK_ID NUMBER (15,0) NOT NULL,
+    CARD_NO NUMBER (10,0) NOT NULL,
+    Date_Out DATE NOT NULL ,
+    Date_In DATE NOT NULL ,
+    DUE_DATE DATE NOT NULL,    
+    CONSTRAINT bk_loanid_pk PRIMARY KEY (LOAN_ID),
+    CONSTRAINT bk_loan_bkid_fk FOREIGN KEY (BOOK_ID) REFERENCES BOOK_COPIES(BOOK_ID),
+    CONSTRAINT bk_loan_cdno_fk FOREIGN KEY (CARD_NO) REFERENCES BORROWER(CARD_NO)
+);
+
+create table random_date 
+(date_out date,due_date date,date_in date,loan_id number(10,0));
+
+create table random_tmp
+(book_id number(15,0),cardno varchar2(100 BYTE),loan_id number(10,0));
+
+create table random_tmp1
+(book_id number(15,0),cardno varchar2(100 BYTE),loan_id number(10,0));
+
+create table random_borrower_tmp
+(card_no VARCHAR2(256 BYTE), loan_id number(10,0));
+
+create table random_books_tmp
+(book_id number(15,0),loan_id number(10,0));
+
+ALTER TABLE BOOK_LOANS
+MODIFY (CARD_NO VARCHAR2(100));
+
+ALTER TABLE BOOK_LOANS
+ADD CONSTRAINT BK_LOAN_CDNO_FK
+FOREIGN KEY (CARD_NO) REFERENCES BORROWER (CARD_NO);
+
+create sequence date_seq 
+START with 1
+INCREMENT BY 1
+
+create sequence book_seq 
+START with 1
+INCREMENT BY 1
+
+create sequence book_card_seq
+START with 1
+INCREMENT BY 1;
+
+Random dates insert
+
+begin
+  for l in 1..500 loop
+    insert into random_date (date_out,due_date,date_in,loan_id)  
+    (
+    select d,d+14,TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(d,'J'),TO_CHAR(d+20,'J'))),'J') as date_in,date_seq.nextval
+    from (SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2018-01-01','J'),TO_CHAR(DATE '2018-11-30','J'))),'J') 
+    as d FROM DUAL)
+    );
+  end loop;
+end;
+
+insert into random_books_tmp (loan_id,book_id)
+select book_seq.nextval,book_id from (select book_id from book_copies order by dbms_random.value) where rownum<101
+
+insert into random_borrower_tmp (loan_id,card_no)
+select card_seq.nextval,card_no from (select card_no from borrower order by dbms_random.value) where rownum<101
+
+insert into random_tmp (book_id,card_no) 
+(select book_id,cardno from random_books_tmp a, random_borrower_tmp b where a.loan_id=b.loan_id)
+
+Repeat the above three queries for random books and card_no with either one of them kept constant and then generating random values for the other to make the feed look naturally.
+
+insert into book_loans (loan_id,book_id,card_no,date_out,date_in,due_date)
+select a.loan_id,book_id,card_no,date_out,date_in,due_date from  random_tmp1 a,random_date b
+where a.loan_id=b.loan_id
+order by loan_id
+
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+Fines table 
+
+CREATE TABLE FINES (
+    LOAN_ID NUMBER (5,0) NOT NULL,
+    FINE_AMT NUMBER (10,3) ,
+    PAID VARCHAR2 (10 BYTE),
+    CONSTRAINT fn_loanid_pk PRIMARY KEY (LOAN_ID),
+	CONSTRAINT bk_loan_fk FOREIGN KEY (LOAN_ID) REFERENCES BOOK_LOANS(LOAN_ID)
+);
+
+
+create table inc_test (inc varchar2(100 BYTE))
+
+declare
+indicator number;
+loop_test number;
+begin
+    select count(*) into loop_test from book_loans where date_in>due_date;
+    for l in 1..loop_test loop
+        select floor(DBMS_RANDOM.VALUE(0,2)) into indicator from dual;
+        IF indicator=1 THEN
+            insert into fines_tmp1 (id,ind) values (fines_seq1.nextval,'Y');
+        ELSE
+            insert into fines_tmp1 (id,ind) values (fines_seq1.nextval,'N');
+        END IF;
+    end loop;
+end;
+
+create table fines_tmp (loan_id number(10,0),amt number(10,0),paid varchar2(100 BYTE))
+create table inc_test (inc varchar2(100 BYTE))
+
+alter table fines_tmp
+add id number(10,3)
+
+create table fines_tmp (loan_id number(10,0),amt number(10,0),paid varchar2(100 BYTE))
+
+create table fines_tmp1
+(id number(10,3),ind varchar2(100 BYTE))
+
+create sequence fines_seq
+start with 1
+increment by 1;
+create sequence fines_seq1
+start with 1
+increment by 1
+
+insert into fines_tmp (loan_id,amt,id)
+select loan_id,(date_in - due_date)*0.25,fines_seq.nextval from book_loans where date_in>due_date
+
+insert into fines (loan_id,fine_amt,paid)
+select loan_id,amt,ind from fines_tmp a,fines_tmp1 b
+where a.id=b.id
+
+
+---------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+UI codes
+
+Home Page:
+select branch_name,branch_id from library_branch
+-------------------------------------------------------------
+Search Results:
+
+select isbn10,title,'Y' as Avaiable, LISTAGG(author_name,' ,') WITHIN GROUP (order by author_name) as Author,no_of_copies from
+(select isbn10,'Y',title,no_of_copies,author_name from (select a.isbn10,title,author_name, no_of_copies from book_copies a,books b,authors c,books_authors d
+        where a.isbn10=b.isbn10 and c.author_id=d.author_id and b.isbn13=d.isbn13 and no_of_copies>0 and branch_id=:BRANCH_DETAILS
+ and (a.isbn10=:BOOK_2 or lower(title) like '%' || lower(:BOOK_2) || '%' or lower(author_name) like '%' || lower(:BOOK_2) || '%' )))
+group by isbn10,title ,no_of_copies
+
+union
+
+select isbn10,title,'N' as Avaiable, LISTAGG(author_name,' ,') WITHIN GROUP (order by author_name) as Author,no_of_copies from
+(select isbn10,'N',title,no_of_copies,author_name from (select a.isbn10,title,author_name, no_of_copies from book_copies a,books b,authors c,books_authors d
+        where a.isbn10=b.isbn10 and c.author_id=d.author_id and b.isbn13=d.isbn13 and no_of_copies=0 and branch_id=:BRANCH_DETAILS
+        and (a.isbn10=:BOOK_2 or lower(title) like '%' || lower(:BOOK_2) || '%' or lower(author_name) like '%' || lower(:BOOK_2) || '%' )))
+group by isbn10,title ,no_of_copies
+
+----------------------------------------------------------------------------------------------
+Add borrower:
+
+select CARD_NO,
+       SSN,
+       FNAME,
+       LNAME,
+       BORR_ADDRESS,
+       PHONE,
+       EMAIL,
+       CITY,
+       STATE
+  from BORROWER
+  
+---------------------------------------------------------------------------------------------
+checkout:
+
+select :CARD_NO from dual;
+
+select branch_name,branch_id from library_branch
+
+declare
+loan_id_test number;
+date_out date;
+check_paid char;
+book_id_value number;
+number_borrowed number;
+past_due number;
+today date;
+book_availability number;
+amount number(10,3);
+begin
+    select count(*) into check_paid from book_loans a,fines b where a.loan_id=b.loan_id and paid='N' and card_no=:CARD_NO;
+    --select sum(fine_amt) into amount from book_loans a,fines b where a.loan_id=b.loan_id and paid='N' and card_no=:CARD_NO group by card_no;
+    if check_paid=0 then
+        select sysdate into today from dual;
+        select count(*) into past_due from book_loans where card_no=:CARD_NO and today>due_date and date_in is NULL;
+        if past_due>0 then
+            RAISE_APPLICATION_ERROR(-20001,'Borrower ' || :CARD_NO || ' has past due books');
+        else
+            select count(card_no) into number_borrowed from book_loans where card_no=:CARD_NO and date_in is NULL;
+            if number_borrowed<3 then
+                select no_of_copies into book_availability from book_copies where branch_id=:LOCATION and isbn10=:ISBN10;
+                if book_availability>0 then
+                    select (max(loan_id) + 1) into loan_id_test from book_loans;
+                    select sysdate into date_out from dual;
+                    select book_id into book_id_value from book_copies where isbn10=:ISBN10  and branch_id=:LOCATION and no_of_copies>0;
+                    insert into book_loans values (loan_id_test,book_id_value,:CARD_NO,date_out,NULL,date_out+14);
+                    update book_copies set no_of_copies=book_availability-1 where branch_id=:LOCATION and isbn10=:ISBN10;
+                else
+                    RAISE_APPLICATION_ERROR(-20001,'Book ' || :ISBN10 || ' not available in the branch');
+                end if;
+            else
+                RAISE_APPLICATION_ERROR(-20001,'Books borrowed by ' || :CARD_NO || ' is already 3');
+            end if;
+        end if;
+    else
+        RAISE_APPLICATION_ERROR(-20001,'Borrower ' || :CARD_NO || ' has unpaid fine ');   
+    end if;
+end;
+
+
+------------------------------------------------------------------------------------------------
+
+check_in_process:
+
+select ('Book ' || c.isbn10 || ':' || title || ' borrowed by ' || card_no) as dd,loan_id from book_loans a, books b, book_copies c 
+where (card_no=:CHECK_IN_DETAILS or c.isbn10=:CHECK_IN_DETAILS)
+and a.book_id=c.book_id and c.isbn10=b.isbn10 and date_in is NULL
+
+declare
+today date;
+fine_check number;
+fine_amount number(10,3);
+book_id_value number(15);
+no_of_copies_after_checkin number(2);
+begin
+select sysdate into today from dual;
+update book_loans set date_in=today where loan_id=:CHECK_IN;
+select book_id into book_id_value from book_loans where loan_id=:CHECK_IN;
+select no_of_copies into no_of_copies_after_checkin from book_copies where book_id=book_id_value;
+update book_copies set no_of_copies=no_of_copies_after_checkin+1 where book_id=book_id_value;
+select count(*) into fine_check from book_loans where loan_id=:CHECK_IN and date_in>due_date;
+if fine_check=1 then
+    select (date_in-due_date)*0.25 into fine_amount from book_loans where loan_id=:CHECK_IN;
+    insert into fines values (:CHECK_IN,fine_amount,'N');
+end if;
+END;
+------------------------------------------------------------------------------------------------------------------
+
+fine details:
+
+select a.book_id,c.isbn10, title,branch_name, fine_amt, paid from book_loans a, fines b,book_copies c,books d,library_branch e
+where a.loan_id=b.loan_id and a.book_id=c.book_id and e.branch_id=c.branch_id
+and c.isbn10=d.isbn10 and card_no=:FINE_DETAILS
+
+select a.book_id,a.loan_id from book_loans a, fines b,book_copies c,books d,library_branch e
+where a.loan_id=b.loan_id and a.book_id=c.book_id and e.branch_id=c.branch_id
+and c.isbn10=d.isbn10 and card_no=:FINE_DETAILS and paid='N'
+
+begin
+update fines set paid='Y' where loan_id=:LOAN_ID;
+end;
+
+-------------------------------------------------------------------------------------------------
+book overdue:
+
+select card_no,b.isbn10,title, branch_name,due_date from book_loans a, book_copies b, books c ,library_branch d
+where card_no=:BORROWER_CARD_NUMBER and a.book_id=b.book_id and b.isbn10=c.isbn10 and d.branch_id=b.branch_id
+and due_date<(select sysdate from dual) and date_in is NULL;
+
+------------------------------------------------------------------------------------------------------
+top 5 loaned out books:
+
+select b.isbn10,title,count(a.book_id) AS Count  from book_loans a, book_copies b, books c 
+where a.book_id = b.book_id AND b.ISBN10 = c.ISBN10 and a.book_id in
+(Select book_id FROM ( Select book_id,count(book_id) AS MAX from book_loans group by book_id order by MAX DESC )
+where rownum<6) group by title,b.isbn10
+
+----------------------------------------------------------------------------------------------
+top 10 fine_defaulters:
+
+select c.card_no,c.fname,c.lname, a.fine_amt from fines a, book_loans b, borrower c where a.loan_id = b.loan_id AND b.card_no = c.card_no AND a.loan_id 
+in (select loan_id from (select loan_id, fine_amt from fines order by fine_amt DESC FETCH FIRST 10 ROWS ONLY)) order by a.fine_amt DESC;
+------------------------------------------------------------------------------------------------
+branches and outstanding fines:
+
+Select d.branch_name, d.branch_id, sum(a.fine_amt) AS Outstanding_Fine_Amount from fines a,book_loans b,book_copies c,library_branch d where a.loan_id = b.loan_id AND b.book_id = c.book_id AND c.branch_id = d.branch_id group by d.branch_name, d.branch_id order by Outstanding_Fine_Amount DESC;
+-------------------------------------------------------------------------------------------------  
+
+
+
